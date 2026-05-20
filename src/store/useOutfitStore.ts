@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useAuthStore } from './useAuthStore';
 
 export const STORE_ITEMS = [
   { id: 'default', name: 'المظهر العادي', icon: '🦉', price: 0, type: 'outfit' },
@@ -24,6 +25,7 @@ interface OutfitStore {
   buyOutfit: (id: string, price: number, currentXp: number, updateXp: (xp: number) => void) => boolean;
   equipOutfit: (id: string) => void;
   equipStyle: (id: string) => void;
+  syncWithProfile: () => void;
 }
 
 export const useOutfitStore = create<OutfitStore>((set, get) => ({
@@ -32,6 +34,26 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
   equippedStyle: localStorage.getItem('owl_equipped_style') || 'default',
   isStoreOpen: false,
   setStoreOpen: (open) => set({ isStoreOpen: open }),
+  
+  syncWithProfile: () => {
+    const profile = useAuthStore.getState().profile;
+    if (profile) {
+      if (profile.purchasedOutfits) {
+        localStorage.setItem('owl_outfits', JSON.stringify(profile.purchasedOutfits));
+      }
+      if (profile.equippedOutfit) {
+        localStorage.setItem('owl_equipped_outfit', profile.equippedOutfit);
+      }
+      if (profile.equippedStyle) {
+        localStorage.setItem('owl_equipped_style', profile.equippedStyle);
+      }
+      set({
+        purchasedOutfits: profile.purchasedOutfits || JSON.parse(localStorage.getItem('owl_outfits') || '["default"]'),
+        equippedOutfit: profile.equippedOutfit || localStorage.getItem('owl_equipped_outfit') || 'default',
+        equippedStyle: profile.equippedStyle || localStorage.getItem('owl_equipped_style') || 'default',
+      });
+    }
+  },
   
   buyOutfit: (id, price, currentXp, updateXp) => {
     if (currentXp >= price && !get().purchasedOutfits.includes(id)) {
@@ -43,9 +65,11 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
       if (item?.type === 'style') {
         localStorage.setItem('owl_equipped_style', id);
         set({ purchasedOutfits: newPurchases, equippedStyle: id });
+        useAuthStore.getState().updateProfile({ purchasedOutfits: newPurchases, equippedStyle: id });
       } else {
         localStorage.setItem('owl_equipped_outfit', id);
         set({ purchasedOutfits: newPurchases, equippedOutfit: id });
+        useAuthStore.getState().updateProfile({ purchasedOutfits: newPurchases, equippedOutfit: id });
       }
       return true;
     }
@@ -56,6 +80,7 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
     if (get().purchasedOutfits.includes(id)) {
       localStorage.setItem('owl_equipped_outfit', id);
       set({ equippedOutfit: id });
+      useAuthStore.getState().updateProfile({ equippedOutfit: id });
     }
   },
 
@@ -63,6 +88,13 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
     if (get().purchasedOutfits.includes(id) || id === 'default') {
       localStorage.setItem('owl_equipped_style', id);
       set({ equippedStyle: id });
+      useAuthStore.getState().updateProfile({ equippedStyle: id });
     }
   }
 }));
+
+useAuthStore.subscribe((state, prevState) => {
+  if (state.profile !== prevState.profile && state.profile !== null) {
+    useOutfitStore.getState().syncWithProfile();
+  }
+});

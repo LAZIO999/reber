@@ -50,14 +50,17 @@ export const AnimatedOwlAsset: React.FC<{
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
+    // mousemove لا يعمل على الهاتف (touch) — نتجنب الـ listener تماماً
+    const isTouchDevice = window.matchMedia('(hover: none)').matches;
+    if (isTouchDevice) return;
+
     const handleMouseMove = (e: MouseEvent) => {
-      // Get mouse position relative to screen center, mapped roughly from -1 to 1
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = (e.clientY / window.innerHeight) * 2 - 1;
       setMousePos({ x, y });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
@@ -117,6 +120,7 @@ export const AnimatedOwlAsset: React.FC<{
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
         className="drop-shadow-lg overflow-visible"
+        style={{ willChange: 'transform' }}
         animate={
           isDizzy ? { rotate: [0, 360], scale: [1, 0.9, 1] } :
             isEating ? { scale: [1, 1.1, 1], rotate: [-5, 5, -5, 0] } :
@@ -447,6 +451,26 @@ export const InteractiveOwl: React.FC = () => {
     prevXpRef.current = profile?.xp || 0;
   }, [profile?.xp, energy, addEnergy, updateEnergy]);
 
+  // Periodic energy check & tab resume check
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateEnergy();
+    }, 60000); // Check every minute
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateEnergy();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [updateEnergy]);
+
   const showMessage = useCallback((text: string, duration = 4000) => {
     setBubbleText(text);
     setIsWaving(true);
@@ -610,14 +634,23 @@ export const InteractiveOwl: React.FC = () => {
             "absolute top-0 left-0 flex flex-col items-center pointer-events-auto cursor-grab active:cursor-grabbing",
           )}
         >
-          {/* Speech Bubble */}
+          {/* Speech Bubble — يظهر على الجهة المعاكسة للحافة لتجنب الخروج من الشاشة */}
           <AnimatePresence>
             {bubbleText && !isPeeking && (
               <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.9, transformOrigin: 'bottom right' }}
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                className="bg-white dark:bg-zinc-800 border-2 border-brand-green/30 shadow-2xl rounded-2xl rounded-br-none p-4 mb-4 max-w-[220px] pointer-events-auto relative"
+                style={{
+                  transformOrigin: edge === 'right' ? 'bottom right' : 'bottom left',
+                  // البومة على اليمين → الفقاعة تظهر لليسار (تراجع سالب)
+                  // البومة على اليسار → الفقاعة تظهر لليمين
+                  [edge === 'right' ? 'right' : 'left']: 0,
+                  position: 'absolute',
+                  bottom: '100%',
+                  marginBottom: '8px',
+                }}
+                className="bg-white dark:bg-zinc-800 border-2 border-brand-green/30 shadow-2xl rounded-2xl p-4 w-[210px] max-w-[75vw] pointer-events-auto"
               >
                 <button
                   onClick={() => setBubbleText(null)}
@@ -631,7 +664,7 @@ export const InteractiveOwl: React.FC = () => {
 
                 {/* Interactions - Only visible when not sleeping/crying/dizzy */}
                 {!isSleeping && !isCrying && !isDizzy && !location.pathname.startsWith('/lessons/') && (
-                  <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <div className="mt-3 flex flex-col gap-2">
                     <button
                       onClick={feedOwl}
                       className="flex-1 flex justify-center items-center gap-1 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors py-1.5 px-2 rounded-lg text-[11px] font-black shadow-sm border border-rose-100 uppercase"
@@ -642,8 +675,12 @@ export const InteractiveOwl: React.FC = () => {
                   </div>
                 )}
 
-                {/* Tail of the bubble */}
-                <div className="absolute -bottom-2 right-4 w-4 h-4 bg-white dark:bg-zinc-800 border-b-2 border-r-2 border-brand-green/30 transform rotate-45" />
+                {/* ذيل الفقاعة — يتغير جانبه حسب موضع البومة */}
+                {edge === 'right' ? (
+                  <div className="absolute -bottom-2 right-4 w-4 h-4 bg-white dark:bg-zinc-800 border-b-2 border-r-2 border-brand-green/30 transform rotate-45" />
+                ) : (
+                  <div className="absolute -bottom-2 left-4 w-4 h-4 bg-white dark:bg-zinc-800 border-b-2 border-l-2 border-brand-green/30 transform rotate-[315deg]" />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -705,7 +742,10 @@ export const InteractiveOwl: React.FC = () => {
             </motion.button>
 
             {/* Energy Bar */}
-            <div className="w-16 bg-white dark:bg-zinc-800 rounded-full p-0.5 mt-1 shadow-sm border border-zinc-200 dark:border-zinc-700 flex items-center gap-1">
+            <div
+              className="w-16 bg-white dark:bg-zinc-800 rounded-full p-0.5 mt-1 shadow-sm border border-zinc-200 dark:border-zinc-700 flex items-center gap-1"
+              style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+            >
               <Zap className={cn("w-3 h-3 text-brand-gold", energy > 0 ? "fill-current animate-pulse" : "opacity-30")} />
               <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
                 <div

@@ -48,6 +48,9 @@ export interface UserProfile {
     }
   >;
   achievements?: string[];
+  purchasedOutfits?: string[];
+  equippedOutfit?: string;
+  equippedStyle?: string;
 }
 
 export interface Message {

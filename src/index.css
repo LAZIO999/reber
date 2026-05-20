@@ -98,3 +98,39 @@
 
 /* Custom shadows and utilities */
 
+/* ───────────────────────────────────────────────────────────
+   GPU-Accelerated Card Animation
+   بديل CSS خفيف لـ Framer Motion على البطاقات
+   نفس التأثير البصري، أخف بكثير على الهاتف
+─────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.35s ease-out both;
+  /* GPU compositing layer */
+  will-change: opacity, transform;
+}
+
+/* ───────────────────────────────────────────────────────────
+   احترام إعداد "تقليل الحركة" في الهاتف
+   prefers-reduced-motion: يوقف الانيميشن لمن يعاني من دوار الحركة
+─────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

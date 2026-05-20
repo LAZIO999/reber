@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { motion } from "motion/react";
+
 import {
   Flame,
   Trophy,
@@ -337,16 +338,19 @@ export function Home() {
 
   return (
     <div className="relative min-h-screen font-arabic" dir="rtl">
-      {/* Background Blobs for Atmosphere */}
+      {/* Background Blobs for Atmosphere — GPU layer لتسريع الـ blur */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
         <div 
           className="absolute -top-20 -left-20 w-80 h-80 bg-orange-200/20 blur-[100px] rounded-full" 
+          style={{ transform: 'translateZ(0)', willChange: 'transform' }}
         />
         <div 
           className="absolute bottom-20 -right-20 w-96 h-96 bg-brand-green/10 blur-[120px] rounded-full" 
+          style={{ transform: 'translateZ(0)', willChange: 'transform' }}
         />
         <div 
           className="absolute top-1/2 left-1/4 w-64 h-64 bg-brand-blue/5 blur-[80px] rounded-full" 
+          style={{ transform: 'translateZ(0)', willChange: 'transform' }}
         />
       </div>
 
@@ -503,21 +507,20 @@ export function Home() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 pb-12">
             {categories.map((cat, idx) => (
-              <motion.div
+              <div
                 key={cat.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.03 }}
                 onClick={() => navigate(`/lessons?category=${cat.id}`)}
-                className="group cursor-pointer"
+                className="group cursor-pointer animate-fade-in-up"
+                style={{ animationDelay: `${idx * 20}ms`, animationFillMode: 'both' }}
               >
                 <div className="h-full bg-white dark:bg-card-bg rounded-[2.5rem] border border-border-main p-6 md:p-8 flex flex-col items-center justify-center gap-6 hover:border-brand-green/30 transition-all duration-500 shadow-soft hover:shadow-deep active:scale-95">
                   
                   <div
                     className={cn(
-                      "w-20 h-20 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center text-white relative z-10 shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500",
+                      "w-20 h-20 md:w-24 md:h-24 rounded-[2rem] flex items-center justify-center text-white relative z-10 shadow-xl group-hover:scale-110 transition-transform duration-300",
                       cat.color,
                     )}
+                    style={{ willChange: 'transform' }}
                   >
                     <div className="w-10 h-10 md:w-12 md:h-12 [&>svg]:w-full [&>svg]:h-full drop-shadow-lg">
                       {cat.icon}
@@ -530,11 +533,9 @@ export function Home() {
                     </span>
                     <div className="flex items-center justify-center gap-2">
                       <div className="flex-1 w-16 md:w-24 h-2 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden border border-border-main/50">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${cat.progress}%` }}
-                          transition={{ duration: 1, delay: 0.5 + idx * 0.05 }}
-                          className={cn("h-full rounded-full", cat.color)}
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-1000", cat.color)}
+                          style={{ width: `${cat.progress}%`, transitionDelay: `${0.5 + idx * 0.03}s` }}
                         />
                       </div>
                       <span className="text-[11px] font-black text-brand-green" dir="ltr">
@@ -543,10 +544,10 @@ export function Home() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
 
-            {/* Games Card Teaser - Cleaned up */}
+            {/* Games Card Teaser */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}

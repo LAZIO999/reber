@@ -489,21 +489,37 @@ export function Auth() {
 
               <div className="flex-1 overflow-y-auto p-12 space-y-10">
                 <section className="space-y-4">
-                  <h3 className="text-2xl font-black text-brand-blue italic underline decoration-brand-blue/20 underline-offset-8">المقدمة | پێشەکی</h3>
+                  <h3 className="text-2xl font-black text-brand-blue italic underline decoration-brand-blue/20 underline-offset-8">1. البيانات التي نجمعها</h3>
                   <p className="font-bold text-zinc-600 leading-loose text-lg">
-                    تلتزم منصة رێبەر بتوفير بيئة تعليمية احترافية تحترم خصوصية المستخدم وتضمن أمن بياناته وفق المعايير التقنية العالمية.
+                    نقوم بجمع بعض المعلومات الأساسية مثل البريد الإلكتروني واسم المستخدم (عند إنشاء الحساب)، بالإضافة إلى بيانات تقدمك الأكاديمي (الدروس، النقاط، والملابس المشتراة) لضمان تجربة تعليمية مخصصة ومستمرة. نستخدم خدمات <strong>Firebase</strong> الآمنة لتخزين هذه البيانات.
                   </p>
                 </section>
                 
                 <section className="space-y-4">
-                  <h3 className="text-2xl font-black text-brand-green italic underline decoration-brand-green/20 underline-offset-8">حماية البيانات</h3>
+                  <h3 className="text-2xl font-black text-brand-green italic underline decoration-brand-green/20 underline-offset-8">2. استخدام البيانات ومشاركتها</h3>
                   <p className="font-bold text-zinc-600 leading-loose text-lg">
-                    يتم استخدام بيانات التعلم فقط لتطوير المسار الأكاديمي وتحسين جودة المحتوى التعليمي. تضمن المنصة عدم مشاركة أي معلومات شخصية مع جهات خارجية لأغراض تجارية.
+                    تُستخدم بياناتك حصرياً لتحسين تجربتك في التطبيق وتتبع تقدمك. نحن نلتزم <strong>بعدم بيع أو مشاركة</strong> أي معلومات شخصية مع أي جهات خارجية أو طرف ثالث لأغراض إعلانية أو تجارية.
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <h3 className="text-2xl font-black text-amber-500 italic underline decoration-amber-500/20 underline-offset-8">3. حذف الحساب والبيانات</h3>
+                  <p className="font-bold text-zinc-600 leading-loose text-lg">
+                    يحق للمستخدم طلب حذف حسابه وكافة بياناته المرتبطة به في أي وقت (Data Deletion Policy). يمكنك القيام بذلك عبر إعدادات الملف الشخصي داخل التطبيق أو من خلال التواصل معنا. عند تأكيد طلب الحذف، سيتم محو كافة بياناتك من خوادمنا بشكل نهائي ولا يمكن استرجاعها.
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <h3 className="text-2xl font-black text-red-500 italic underline decoration-red-500/20 underline-offset-8">4. التواصل معنا</h3>
+                  <p className="font-bold text-zinc-600 leading-loose text-lg">
+                    إذا كان لديك أي استفسارات أو طلبات متعلقة بالخصوصية وحماية البيانات، يرجى التواصل مع فريق الدعم الفني عبر البريد الإلكتروني: <span className="text-brand-blue" dir="ltr">ima3548@icloud.com</span>
+                    <br />
+                    أو عبر حسابنا على تيليجرام: <span className="text-brand-blue" dir="ltr">@lazio933</span>
                   </p>
                 </section>
 
                 <div className="p-8 bg-zinc-50 rounded-[3rem] text-center italic font-bold text-zinc-400 border border-zinc-100">
-                  تم تحديث السياسة لتتواكب مع معايير الأمان والجودة الأكاديمية في مايو 2024.
+                  تم إعداد هذه السياسة لتتوافق مع معايير الأمان والخصوصية المعتمدة لدى متجر Google Play.
                 </div>
               </div>
 

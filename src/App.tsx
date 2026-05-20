@@ -34,6 +34,50 @@ const SentenceBuilder = lazy(() => import("./pages/SentenceBuilder").then(m => (
 const WordBattle = lazy(() => import("./pages/WordBattle").then(m => ({ default: m.WordBattle })));
 const RoleplayGame = lazy(() => import("./pages/RoleplayGame").then(m => ({ default: m.RoleplayGame })));
 
+// ─── Router يُنشأ مرة واحدة خارج المكوّن ───────────────────────
+// المكوّنات Guard (AuthRoute, OnboardingRoute, AuthShell)
+// تتحقق من الـ Auth state ديناميكياً في كل render لها
+const router = createHashRouter([
+  {
+    path: "/auth",
+    element: <AuthRoute />,        // ← يتحقق من user ديناميكياً
+  },
+  {
+    path: "/onboarding",
+    element: <OnboardingRoute />,  // ← يتحقق من user + profile
+  },
+  {
+    element: <AuthShell />,        // ← يحمي كل الصفحات الداخلية
+    children: [
+      {
+        element: <PageTransitionWrapper />,
+        children: [
+          { path: "/", element: <Home /> },
+          { path: "profile", element: <Profile /> },
+          { path: "saved", element: <SavedWords /> },
+          { path: "saved/review", element: <SavedWordsReview /> },
+          { path: "lessons", element: <LessonSelection /> },
+          { path: "lessons/:id", element: <Lessons /> },
+          { path: "ai-chat", element: <AiChat /> },
+          { path: "leaderboard", element: <Leaderboard /> },
+          { path: "stories", element: <Stories /> },
+          { path: "games", element: <Games /> },
+          { path: "games/matching", element: <MatchingGame /> },
+          { path: "games/scramble", element: <WordScramble /> },
+          { path: "games/cards", element: <Flashcards /> },
+          { path: "games/sentence-builder", element: <SentenceBuilder /> },
+          { path: "battles", element: <WordBattle /> },
+          { path: "roleplay", element: <RoleplayGame /> },
+        ],
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
+]);
+
 function PageLoader() {
   return (
     <div className="w-full h-[60vh] flex items-center justify-center">
@@ -53,6 +97,7 @@ function PageTransitionWrapper() {
         exit={{ opacity: 0, x: -10 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="w-full h-full"
+        style={{ willChange: 'opacity, transform' }}
       >
         <Suspense fallback={<PageLoader />}>
           <Outlet />
@@ -62,6 +107,42 @@ function PageTransitionWrapper() {
   );
 }
 
+// ─── مكوّن وسيط لصفحة Auth ───────────────────────────────────────
+// إذا المستخدم مسجّل دخوله → اذهب للرئيسية
+// إذا لا → اعرض صفحة تسجيل الدخول
+function AuthRoute() {
+  const { user } = useAuthStore();
+  if (user) return <Navigate to="/" replace />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Auth />
+    </Suspense>
+  );
+}
+
+// ─── مكوّن وسيط لصفحة Onboarding ───────────────────────────────
+// إذا لا يوجد مستخدم → auth
+// إذا يوجد profile → الرئيسية (أنهى الـ onboarding)
+// إذا مستخدم بدون profile → اعرض onboarding
+function OnboardingRoute() {
+  const { user, profile } = useAuthStore();
+  if (!user) return <Navigate to="/auth" replace />;
+  if (profile) return <Navigate to="/" replace />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Onboarding />
+    </Suspense>
+  );
+}
+
+// ─── مكوّن وسيط للصفحات المحمية ─────────────────────────────────
+// إذا لا يوجد مستخدم → auth
+function AuthShell() {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Shell />;
+}
+
 export default function App() {
   const { initialize, user, profile, loading, initialized } = useAuthStore();
   const { isDark } = useThemeStore();
@@ -69,8 +150,6 @@ export default function App() {
 
   useEffect(() => {
     initialize();
-
-    // Initialize dark mode class on mount
     if (isDark) {
       document.documentElement.classList.add("dark");
     } else {
@@ -85,47 +164,6 @@ export default function App() {
       </div>
     );
   }
-
-  const router = createHashRouter([
-    {
-      path: "/auth",
-      element: !user ? <Suspense fallback={<PageLoader />}><Auth /></Suspense> : <Navigate to="/" replace />,
-    },
-    {
-      path: "/onboarding",
-      element: user && !profile ? <Suspense fallback={<PageLoader />}><Onboarding /></Suspense> : <Navigate to="/" replace />,
-    },
-    {
-      element: user ? <Shell /> : <Navigate to="/auth" replace />,
-      children: [
-        {
-          element: <PageTransitionWrapper />,
-          children: [
-            { path: "/", element: <Home /> },
-            { path: "profile", element: <Profile /> },
-            { path: "saved", element: <SavedWords /> },
-            { path: "saved/review", element: <SavedWordsReview /> },
-            { path: "lessons", element: <LessonSelection /> },
-            { path: "lessons/:id", element: <Lessons /> },
-            { path: "ai-chat", element: <AiChat /> },
-            { path: "leaderboard", element: <Leaderboard /> },
-            { path: "stories", element: <Stories /> },
-            { path: "games", element: <Games /> },
-            { path: "games/matching", element: <MatchingGame /> },
-            { path: "games/scramble", element: <WordScramble /> },
-            { path: "games/cards", element: <Flashcards /> },
-            { path: "games/sentence-builder", element: <SentenceBuilder /> },
-            { path: "battles", element: <WordBattle /> },
-            { path: "roleplay", element: <RoleplayGame /> },
-          ],
-        },
-      ],
-    },
-    {
-      path: "*",
-      element: <Navigate to="/" replace />,
-    },
-  ]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-300">

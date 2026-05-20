@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Book, Play, Lock, Sparkles, Star, ChevronLeft, Volume2, Gamepad2 } from "lucide-react";
+import { Book, Play, Lock, Sparkles, Star, ChevronLeft, Volume2, Gamepad2, X } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuthStore } from "../store/useAuthStore";
 import { playCorrectSound, playKurdishAudio } from "../lib/audio";
@@ -248,8 +249,8 @@ export function Stories() {
 
   // 2. Story Finished View
   if (isFinished) {
-     return (
-       <div className="fixed inset-0 bg-[#FFFBF0] z-[100] flex flex-col items-center justify-center p-6 text-center font-arabic animate-in fade-in">
+     return createPortal(
+       <div className="fixed inset-0 bg-[#FFFBF0] z-[100] flex flex-col items-center justify-center p-6 text-center font-arabic animate-in fade-in" dir="rtl">
           <motion.div 
             initial={{ scale: 0 }} 
             animate={{ scale: 1, rotate: [0, 5, -5, 0] }}
@@ -271,22 +272,24 @@ export function Stories() {
           >
             العودة للقصص
           </button>
-       </div>
+       </div>,
+       document.body
      );
   }
 
   // 3. Reading View
   const part = selectedStory.parts[currentPart];
   
-  return (
-    <div className="fixed inset-0 bg-[#FFFBF0] z-[100] flex flex-col font-arabic overflow-hidden">
+  return createPortal(
+    <div className="fixed inset-0 bg-[#FFFBF0] z-[100] flex flex-col font-arabic overflow-hidden" dir="rtl">
        {/* Header */}
        <div className="bg-white border-b-2 border-gray-100 p-4 flex items-center justify-between shadow-sm relative z-10">
           <button 
             onClick={() => setSelectedStory(null)}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="flex items-center gap-1.5 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 px-4 py-2.5 rounded-xl font-black transition-colors shadow-sm border border-red-100 active:scale-95"
           >
-             <ChevronLeft className="w-7 h-7" />
+             <X className="w-5 h-5" />
+             <span>خروج</span>
           </button>
           
           <div className="flex-1 max-w-xs mx-4">
@@ -359,6 +362,8 @@ export function Stories() {
             {currentPart < selectedStory.parts.length - 1 ? "التالي" : "إنهاء القصة"}
           </button>
        </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+

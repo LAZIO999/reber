@@ -196,6 +196,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           lastHeartRefresh: new Date().toISOString(),
           completedLessons: [],
           lessonProgress: {},
+          purchasedOutfits: ["default"],
+          equippedOutfit: "default",
+          equippedStyle: "default",
         };
         await firestoreService.createUserProfile(profile);
       }
@@ -236,6 +239,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           lastHeartRefresh: new Date().toISOString(),
           completedLessons: [],
           lessonProgress: {},
+          purchasedOutfits: ["default"],
+          equippedOutfit: "default",
+          equippedStyle: "default",
         };
         await firestoreService.createUserProfile(profile);
       }
@@ -272,6 +278,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           lastHeartRefresh: new Date().toISOString(),
           completedLessons: [],
           lessonProgress: {},
+          purchasedOutfits: ["default"],
+          equippedOutfit: "default",
+          equippedStyle: "default",
         };
         await firestoreService.createUserProfile(profile);
       }

@@ -1,6 +1,11 @@
 import { convertSoraniToLatin } from "./kurdishTransliterator";
-import { storage } from "./firebase";
-import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import {
+  generateAudioCacheKey,
+  getFromAudioCache,
+  saveToAudioCache,
+} from "./audioCache";
+
+// ─── أصوات تأثيرات اللعبة ───────────────────────────────────────
 
 export const playCorrectSound = () => {
     try {
@@ -86,7 +91,6 @@ export const playCuteSound = () => {
             const gain = ctx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-            // cute pitch bend up
             osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + delay + 0.1);
             
             gain.gain.setValueAtTime(0, ctx.currentTime + delay);
@@ -104,119 +108,95 @@ export const playCuteSound = () => {
     } catch (e) {}
 };
 
-export const playKurdishAudio = async (text: string) => {
-   const AUDIO_MAP: Record<string, string> = {};
+// ─── الدالة الرئيسية لتشغيل الصوت الكردي ──────────────────────
+/**
+ * تشغيل الصوت الكردي مع نظام كاش 3 طبقات:
+ *   RAM → IndexedDB → Firebase Storage → TTS API → Speech Synthesis
+ *
+ * أول مرة: يُولَّد الصوت من TTS ويُحفظ في كل الطبقات تلقائياً.
+ * المرات التالية: يُشغَّل مباشرة من الكاش بدون استهلاك أي حد يومي.
+ */
+export const playKurdishAudio = async (text: string): Promise<void> => {
+  const trimmedText = text.trim();
+  if (!trimmedText) return;
 
-   // Check if we have a pre-recorded audio for this text (case-insensitive check)
-   const customAudioUrl = AUDIO_MAP[text] || AUDIO_MAP[text.trim()] || Object.entries(AUDIO_MAP).find(([key]) => key.toLowerCase() === text.trim().toLowerCase())?.[1];
+  // تحديد معرّف المتكلم بناءً على نوع النص
+  const isArabicScript = /[\u0600-\u06FF]/.test(trimmedText);
+  const speaker_id = isArabicScript ? "sorani_1" : "kurmanji_236";
 
-   if (customAudioUrl) {
-     try {
-       const audio = new Audio(customAudioUrl);
-       // Play directly to avoid iOS blocking delayed playback
-       await audio.play();
-       return; // If successful, exit
-     } catch (err) {
-       console.error("Custom audio playback failed, falling back to TTS:", err);
-     }
-   }
+  // توليد مفتاح الكاش الفريد
+  const cacheKey = generateAudioCacheKey(trimmedText, speaker_id);
 
-   const isArabicScript = /[\u0600-\u06FF]/.test(text);
-   const speaker_id = isArabicScript ? "sorani_1" : "kurmanji_236";
-   
-   // Generate cache filename
-   const safeTitle = encodeURIComponent(text.slice(0, 20)).replace(/[^a-zA-Z0-9]/g, '');
-   let textHash = 0;
-   for (let i = 0; i < text.length; i++) {
-      textHash = ((textHash << 5) - textHash) + text.charCodeAt(i);
-      textHash = textHash & textHash; 
-   }
-   const fileName = `tts_cache/${safeTitle}_${Math.abs(textHash)}_${speaker_id}.wav`;
+  // ── المحاولة من الكاش (طبقة 1 + 2 + 3) ──────────────────────
+  const cachedUrl = await getFromAudioCache(cacheKey, speaker_id);
+  if (cachedUrl) {
+    await playAudioUrl(cachedUrl);
+    return;
+  }
 
-   // Try to fetch from Firebase Storage first
-   try {
-     const audioRef = ref(storage, fileName);
-     const cachedUrl = await getDownloadURL(audioRef);
-     
-     if (cachedUrl) {
-       console.log("Playing from Firebase cache:", fileName);
-       const audio = new Audio(cachedUrl);
-       await new Promise((resolve, reject) => {
-         audio.onended = resolve;
-         audio.onerror = reject;
-         audio.play().catch(reject);
-       });
-       return;
-     }
-   } catch (error) {
-     // Expected to fail if file doesn't exist yet
-     console.log("No cache found, generating new TTS audio...");
-   }
+  // ── لا يوجد في الكاش → توليد من TTS API ────────────────────
+  try {
+    const response = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: trimmedText, speaker_id, speed: 1.0 }),
+    });
 
-   try {
-     const response = await fetch("/api/tts", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({
-         text,
-         speaker_id,
-         speed: 1.0
-       })
-     });
+    if (!response.ok) {
+      throw new Error(`TTS API responded with ${response.status}`);
+    }
 
-     if (!response.ok) throw new Error("Network response was not ok from TTS API");
-     
-     const blob = await response.blob();
-     
-     // Save to Firebase Storage in background
-     try {
-       const audioRef = ref(storage, fileName);
-       uploadBytes(audioRef, blob).then(() => {
-         console.log("Successfully cached audio to Firebase:", fileName);
-       }).catch((err) => {
-         console.error("Failed to cache audio in Firebase:", err);
-       });
-     } catch (cacheErr) {
-       console.warn("Could not initiate cache upload:", cacheErr);
-     }
+    const blob = await response.blob();
 
-     const url = URL.createObjectURL(blob);
-     const audio = new Audio(url);
-     
-     await new Promise((resolve, reject) => {
-       audio.onended = () => {
-         URL.revokeObjectURL(url);
-         resolve(true);
-       };
-       audio.onerror = (e) => {
-         URL.revokeObjectURL(url);
-         reject(e);
-       };
-       audio.play().catch(reject);
-     });
-     return; // Success with API key
-   } catch (e) {
-     console.error("TTS API engine failed, falling back to local speech synthesis:", e);
-   }
+    // ── حفظ في كل طبقات الكاش (IndexedDB + RAM + Firebase في الخلفية) ──
+    const objectUrl = await saveToAudioCache(
+      cacheKey,
+      speaker_id,
+      blob,
+      navigator.onLine // ارفع لـ Firebase فقط إذا كان هناك اتصال
+    );
 
-   // Fallback to local speech synthesis
-   if (!("speechSynthesis" in window)) return;
-   
-   const textToSpeak = isArabicScript ? convertSoraniToLatin(text) : text;
-   window.speechSynthesis.cancel();
-   
-   const utter = new SpeechSynthesisUtterance(textToSpeak);
-   utter.lang = "tr-TR";
-   utter.rate = 0.82;
-   utter.pitch = 1.05;
-   
-   const voices = window.speechSynthesis.getVoices();
-   const pick =
-     voices.find((v) => v.lang.startsWith("tr")) ||
-     voices.find((v) => v.lang.startsWith("en")) ||
-     null;
-     
-   if (pick) utter.voice = pick;
-   
-   window.speechSynthesis.speak(utter);
+    await playAudioUrl(objectUrl);
+    return;
+
+  } catch (apiError) {
+    console.error("[Audio] TTS API failed, falling back to Speech Synthesis:", apiError);
+  }
+
+  // ── بديل أخير: Web Speech Synthesis ─────────────────────────
+  fallbackToSpeechSynthesis(trimmedText, isArabicScript);
 };
+
+// ─── دوال مساعدة ───────────────────────────────────────────────
+
+/** تشغيل صوت من objectURL أو URL عادي */
+async function playAudioUrl(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio(url);
+    audio.onended = () => resolve();
+    audio.onerror = (e) => reject(e);
+    audio.play().catch(reject);
+  });
+}
+
+/** الاحتياط الأخير: نطق محلي عبر Web Speech API */
+function fallbackToSpeechSynthesis(text: string, isArabicScript: boolean): void {
+  if (!("speechSynthesis" in window)) return;
+
+  const textToSpeak = isArabicScript ? convertSoraniToLatin(text) : text;
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(textToSpeak);
+  utter.lang = "tr-TR";
+  utter.rate = 0.82;
+  utter.pitch = 1.05;
+
+  const voices = window.speechSynthesis.getVoices();
+  const pick =
+    voices.find((v) => v.lang.startsWith("tr")) ||
+    voices.find((v) => v.lang.startsWith("en")) ||
+    null;
+
+  if (pick) utter.voice = pick;
+  window.speechSynthesis.speak(utter);
+}
