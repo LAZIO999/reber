@@ -1,0 +1,100 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800;900&display=swap");
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Noto Sans Arabic", sans-serif;
+}
+
+:root {
+  --brand-green: #29b263; /* exact vibrant green from 'Greetings' icon */
+  --brand-green-dark: #1e8749;
+  --brand-gold: #ff9800; /* exact orange from streak */
+  --brand-blue: #0288d1; /* exact blue from XP energy */
+  --brand-red: #ff5252; /* red from 'Letters' icon */
+  --brand-red-dark: #d32f2f;
+  --bg-main: #fdfcf6; /* slightly warm off-white background */
+  --card-bg: #ffffff;
+  --border-main: #f0f0f0;
+  --text-main: #111827; 
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+}
+
+.dark {
+  --brand-green: #4ade80;
+  --brand-green-dark: #22c55e;
+  --brand-gold: #fbbf24;
+  --brand-blue: #60a5fa;
+  --brand-red: #f87171;
+  --brand-red-dark: #ef4444;
+  --bg-main: #020617;
+  --card-bg: #0f172a;
+  --border-main: #1e293b;
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+}
+
+@theme {
+  --font-sans: "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Noto Sans Arabic", sans-serif;
+
+  --color-brand-green: var(--brand-green);
+  --color-brand-green-dark: var(--brand-green-dark);
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-red: var(--brand-red);
+  --color-brand-red-dark: var(--brand-red-dark);
+  --color-bg-main: var(--bg-main);
+  --color-border-main: var(--border-main);
+  --color-text-main: var(--text-main);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-card-bg: var(--card-bg);
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-bg-main text-text-main transition-colors duration-500 antialiased;
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1.6;
+  }
+}
+
+.soft-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+}
+
+.deep-shadow {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+}
+
+.brutal-button {
+  @apply transition-all active:scale-[0.98] hover:shadow-lg duration-300;
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .pt-safe {
+    padding-top: max(1.5rem, env(safe-area-inset-top));
+  }
+  .pb-safe {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Custom shadows and utilities */
+

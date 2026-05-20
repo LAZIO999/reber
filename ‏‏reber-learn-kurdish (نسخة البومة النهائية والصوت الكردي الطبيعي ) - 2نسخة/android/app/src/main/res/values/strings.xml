@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Reber Learn Kurdish</string>
+    <string name="title_activity_main">Reber Learn Kurdish</string>
+    <string name="package_name">com.reber.learn.kurdish</string>
+    <string name="custom_url_scheme">com.reber.learn.kurdish</string>
+</resources>

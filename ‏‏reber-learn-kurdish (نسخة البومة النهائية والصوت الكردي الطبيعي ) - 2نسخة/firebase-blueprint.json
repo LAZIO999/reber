@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and statistics",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "xp": { "type": "integer" },
+        "streak": { "type": "integer" },
+        "level": { "type": "integer" },
+        "hearts": { "type": "integer" },
+        "lastHeartRefresh": { "type": "string", "format": "date-time" },
+        "selectedDialect": { "type": "string", "enum": ["Sorani", "Kurmanji"] },
+        "learningLanguage": { "type": "string", "enum": ["English", "Arabic"] },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "completedLessons": { "type": "array", "items": { "type": "string" } },
+        "lessonProgress": { 
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "status": { "type": "string", "enum": ["started", "in-progress", "completed"] },
+              "lastAccessed": { "type": "string", "format": "date-time" },
+              "progress": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["uid", "username", "email", "xp", "streak"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Learning courses for specific dialects",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "dialect": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "Individual lessons within a category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "integer" },
+        "xpReward": { "type": "integer" }
+      }
+    },
+    "Word": {
+      "title": "Word",
+      "description": "Vocabulary items",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "kurdish": { "type": "string" },
+        "translation": { "type": "string" },
+        "pronunciation": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] }
+      }
+    },
+    "Progress": {
+      "title": "User Progress",
+      "description": "Tracks user's progress in lessons",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "completed"] },
+        "score": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "SavedWord": {
+      "title": "Saved Word",
+      "description": "Bookmarked words by the user",
+      "type": "object",
+      "properties": {
+        "wordId": { "type": "string" },
+        "kurdish": { "type": "string" },
+        "translation": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["wordId", "kurdish", "translation", "savedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Available courses"
+    },
+    "/courses/{courseId}/lessons/{lessonId}": {
+      "schema": "Lesson",
+      "description": "Lessons within a course"
+    },
+    "/words/{wordId}": {
+      "schema": "Word",
+      "description": "Global dictionary"
+    },
+    "/users/{userId}/progress/{progressId}": {
+      "schema": "Progress",
+      "description": "User specific progress"
+    },
+    "/users/{userId}/savedWords/{wordId}": {
+      "schema": "SavedWord",
+      "description": "User's bookmarked words"
+    }
+  }
+}
